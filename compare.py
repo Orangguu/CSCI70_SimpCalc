@@ -57,7 +57,7 @@ def compare_directories(test_dir, correct_dir):
 
 def main():
     test_dir = "output_files"
-    correct_dir = "expected_outputs"
+    correct_dir = "samples-2"
 
     results = compare_directories(test_dir, correct_dir)
 
