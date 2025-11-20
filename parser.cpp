@@ -5,14 +5,10 @@
 #include <filesystem>
 #include "token.hpp"
 #include "scanner.hpp"
+#include "parser.hpp"
 
 using namespace std;
 namespace fs = std::filesystem;
-
-// From scanner module:
-void openTokenStream(const string&);
-Token gettoken();
-Token peektoken();
 
 // GLOBAL ERROR FLAG
 bool errorFound = false;
@@ -26,7 +22,7 @@ void Trm(ofstream&);
 void Trmfollow(ofstream&);
 void Fac(ofstream&);
 void Facfollow(ofstream&);
-void Lit(ofstream&);    
+void Lit(ofstream&);
 void Litfollow(ofstream&);
 void Val(ofstream&);
 void Arg(ofstream&);
@@ -35,10 +31,7 @@ void Cnd(ofstream&);
 void Rel(ofstream&);
 void Iffollow(ofstream&);
 
-
-// ======================================================
-// MATCH FUNCTION
-// ======================================================
+// match()
 bool match(const string& expected, ofstream& out) {
     if (errorFound) return false;
 
@@ -53,10 +46,7 @@ bool match(const string& expected, ofstream& out) {
     return false;
 }
 
-
-// ======================================================
 // PARSER IMPLEMENTATION
-// ======================================================
 
 void Prg(ofstream& out) {
     if (errorFound) return;
@@ -79,6 +69,7 @@ void Stm(ofstream& out) {
 
     Token t = peektoken();
 
+    // Assignment
     if (t.type == "Identifier") {
         gettoken();
         if (!match("Assign", out)) return;
@@ -88,6 +79,7 @@ void Stm(ofstream& out) {
         return;
     }
 
+    // Print
     if (t.type == "Print") {
         gettoken();
         if (!match("LeftParen", out)) return;
@@ -99,6 +91,7 @@ void Stm(ofstream& out) {
         return;
     }
 
+    // If
     if (t.type == "If") {
         gettoken();
         out << "If Statement Begins\n";
@@ -114,31 +107,43 @@ void Stm(ofstream& out) {
     errorFound = true;
 }
 
+// PRINT ARGUMENTS
 void Arg(ofstream& out) {
     if (errorFound) return;
+
     if (peektoken().type == "String") {
         gettoken();
         return;
     }
+
     Exp(out);
 }
 
 void Argfollow(ofstream& out) {
     if (errorFound) return;
 
-    if ((peektoken().type == "RightParen") || (peektoken().type == "EndofFile")) return;
+    Token t = peektoken();
 
-    if (peektoken().type == "Comma") {
+    if (t.type == "RightParen" || t.type == "EndofFile")
+        return;
+
+    if (t.type == "Comma") {
         gettoken();
         Arg(out);
         if (errorFound) return;
         Argfollow(out);
         return;
     }
+
+    // Unexpected token in Arg list = error
+    out << "Parse Error: Comma or RightParen expected in argument list.\n";
+    errorFound = true;
 }
 
+// IF FOLLOW
 void Iffollow(ofstream& out) {
     if (errorFound) return;
+
     Token t = peektoken();
 
     if (t.type == "Endif") {
@@ -150,7 +155,7 @@ void Iffollow(ofstream& out) {
     if (t.type == "Else") {
         gettoken();
         Blk(out);
-        if (!match("Endif", out)) return; 
+        if (!match("Endif", out)) return;
         if (!match("Semicolon", out)) return;
         return;
     }
@@ -159,25 +164,23 @@ void Iffollow(ofstream& out) {
     errorFound = true;
 }
 
+
 void Exp(ofstream& out) {
     if (errorFound) return;
 
     Token t = peektoken();
 
-    // Grammar DOES NOT support boolean operators.
+    // Boolean operators are not in this grammar
     if (t.type == "And" || t.type == "Or" || t.type == "Not") {
         out << "Parse Error: Colon expected.\n";
         errorFound = true;
         return;
     }
 
-    if (t.type=="Comma" || t.type=="RightParen") return;
-
     Trm(out);
     if (errorFound) return;
     Trmfollow(out);
 }
-
 
 void Trm(ofstream& out) {
     if (errorFound) return;
@@ -189,13 +192,12 @@ void Trm(ofstream& out) {
 void Trmfollow(ofstream& out) {
     if (errorFound) return;
 
-    if (peektoken().type == "Comma" || peektoken().type == "RightParen") return;
-
     Token t = peektoken();
-    if (t.type=="Plus" || t.type=="Minus") {
+    while (t.type == "Plus" || t.type == "Minus") {
         gettoken();
         Trm(out);
-        Trmfollow(out);
+        if (errorFound) return;
+        t = peektoken();
     }
 }
 
@@ -209,50 +211,51 @@ void Fac(ofstream& out) {
 void Facfollow(ofstream& out) {
     if (errorFound) return;
 
-    if (peektoken().type == "Comma" || peektoken().type == "RightParen") return;
-
     Token t = peektoken();
-    if (t.type=="Multiply" || t.type=="Divide") {
+    while (t.type == "Multiply" || t.type == "Divide") {
         gettoken();
         Fac(out);
         if (errorFound) return;
-        Facfollow(out);
-    }
-}
-
-void Litfollow(ofstream& out) {
-    if (errorFound) return;
-
-    if (peektoken().type == "Comma" || peektoken().type == "RightParen") return;    
-
-    if (peektoken().type=="Raise") {
-        gettoken();
-        Lit(out);
-        if (errorFound) return;
-        Litfollow(out);
+        t = peektoken();
     }
 }
 
 void Lit(ofstream& out) {
     if (errorFound) return;
-    if (peektoken().type=="Minus") {
+
+    Token t = peektoken();
+    if (t.type == "Minus") {
         gettoken();
         Val(out);
         return;
     }
+
     Val(out);
+}
+
+void Litfollow(ofstream& out) {
+    if (errorFound) return;
+
+    Token t = peektoken();
+    while (t.type == "Raise") {
+        gettoken();
+        Lit(out);
+        if (errorFound) return;
+        t = peektoken();
+    }
 }
 
 void Val(ofstream& out) {
     if (errorFound) return;
+
     Token t = peektoken();
 
-    if (t.type=="Identifier" || t.type=="Number") {
+    if (t.type == "Identifier" || t.type == "Number") {
         gettoken();
         return;
     }
 
-    if (t.type=="Sqrt") {
+    if (t.type == "Sqrt") {
         gettoken();
         if (!match("LeftParen", out)) return;
         Exp(out);
@@ -260,7 +263,7 @@ void Val(ofstream& out) {
         return;
     }
 
-    if (t.type=="LeftParen") {
+    if (t.type == "LeftParen") {
         gettoken();
         Exp(out);
         if (!match("RightParen", out)) return;
@@ -271,6 +274,7 @@ void Val(ofstream& out) {
     errorFound = true;
 }
 
+// IF CONDITION
 void Cnd(ofstream& out) {
     Exp(out);
     Rel(out);
@@ -280,8 +284,8 @@ void Cnd(ofstream& out) {
 void Rel(ofstream& out) {
     Token t = peektoken();
 
-    if (t.type=="LessThan" || t.type=="Equal" || t.type=="GreaterThan" ||
-        t.type=="GTEqual" || t.type=="NotEqual" || t.type=="LTEqual") {
+    if (t.type == "LessThan" || t.type == "Equal" || t.type == "GreaterThan" ||
+        t.type == "GTEqual" || t.type == "NotEqual" || t.type == "LTEqual") {
         gettoken();
         return;
     }
@@ -291,33 +295,30 @@ void Rel(ofstream& out) {
 }
 
 
-
-// ======================================================
-// DRIVER — PROCESS ALL SCANNER OUTPUT FILES
-// ======================================================
-
+// Process all output files of scanner
 void processParser() {
-    const string outDir="output_files";
+    const string outDir = "output_files";
 
-    for (auto &entry : fs::directory_iterator(outDir)){
+    for (auto &entry : fs::directory_iterator(outDir)) {
         string fname = entry.path().filename().string();
-        if (fname.find("output_scan")==string::npos) continue;
+        if (fname.find("output_scan") == string::npos)
+            continue;
 
-        string parseName=fname;
-        size_t pos=parseName.find("scan");
-        parseName.replace(pos,4,"parse");
+        string parseName = fname;
+        size_t pos = parseName.find("scan");
+        parseName.replace(pos, 4, "parse");
 
-        ofstream out(outDir+"/"+parseName);
+        ofstream out(outDir + "/" + parseName);
 
         string scanFile = outDir + "/" + fname;
         string original = getOriginalFromScan(scanFile);
 
         openTokenStream(scanFile, original);
 
-        errorFound=false;
+        errorFound = false;
         Prg(out);
 
         if (!errorFound)
-            out<< original <<" is a valid SimpCalc program";
+            out << original << " is a valid SimpCalc program";
     }
 }

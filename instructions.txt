@@ -1,0 +1,15 @@
+INSTRUCTIONS
+
+1. Place all the input files in a directory named "input_files"
+
+2. Compile the programs by running:
+    2.1 FOR WINDOWS: g++ main.cpp scanner.cpp parser.cpp -o simpcalc
+    2.2 FOR MAC: g++ -std=c++17 main.cpp scanner.cpp parser.cpp -o simpcalc
+
+    This will produce an executable file, simpcalc
+
+3. Execute simpcalc using the command
+    3.1 FOR WINDOWS: simpcalc
+    3.1 FOR MAC: ./simpcalc
+
+4. Results can be found in a directory named output_files, which is created by the simpcalc program.

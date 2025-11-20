@@ -12,10 +12,7 @@
 using namespace std;
 namespace fs = std::filesystem;
 
-// ======================================================
 // TOKEN TABLES
-// ======================================================
-
 unordered_map<string, string> keywords = {
     {"IF", "If"}, {"ELSE", "Else"}, {"ENDIF", "Endif"},
     {"PRINT", "Print"}, {"SQRT", "Sqrt"},
@@ -28,25 +25,17 @@ unordered_map<char, string> single_tokens = {
     {'+', "Plus"}, {'-', "Minus"}, {'=', "Equal"}
 };
 
-// ======================================================
+
 // MAPPING: scanFile → originalInputFile
-// ======================================================
-
 static map<string,string> fileMapping;
-
 string getOriginalFromScan(const string& scanFile) {
     if (fileMapping.count(scanFile)) return fileMapping[scanFile];
     return "";
 }
 
-// ======================================================
-// SCANNER THAT PRODUCES OUTPUT FILE
-// ======================================================
 
-string currentSourceFilename = "";
-
+// SCANNER
 void scan(string inputFileName, string outputFileName) {
-    currentSourceFilename = inputFileName;
     ifstream input(inputFileName);
     ofstream output(outputFileName);
 
@@ -210,10 +199,7 @@ void scan(string inputFileName, string outputFileName) {
 
 
 
-// ======================================================
-// PART 2 — PROVIDE gettoken() FOR PARSER
-// ======================================================
-
+// gettoken() implementation 
 static ifstream tokenStream;
 static Token saved = {"",""};
 static bool hasSaved = false;
@@ -244,17 +230,17 @@ static Token readNextToken() {
     if (type == "Lexical" || type == "Error")
         return {"Error", ""};
 
-    // If the token is a string, read until closing quote
+    // if the token is a string, read until closing quote
     if (type == "String") {
         char ch;
         lexeme = "";  
 
-        // Skip whitespace before the first quote
+        // skip whitespace
         tokenStream >> std::ws;  
-        tokenStream.get(ch);  // Should be the opening quote
+        tokenStream.get(ch);
         if (ch != '"') return {"Error", ""};  
 
-        // Read until the closing quote
+        // read until the closing quote
         while (tokenStream.get(ch) && ch != '"') {
             lexeme += ch;
         }
@@ -282,10 +268,8 @@ Token peektoken() {
 }
 
 
-// ======================================================
-// PROCESS ALL INPUT FILES
-// ======================================================
 
+// process all files found in the specified input directory
 void processAllFiles() {
     const string inputDir="input_files";
     const string outputDir="output_files";
@@ -308,11 +292,5 @@ void processAllFiles() {
         fileMapping[outPath] = inPath;
 
         scan(inPath, outPath);
-        cout << "Scanned " << in << endl;
     }
 }
-
-// int main() {
-//     processAllFiles();
-//     return 0;
-// }
