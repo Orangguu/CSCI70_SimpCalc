@@ -7,4 +7,4 @@ If Statement Begins
 Print Statement Recognized
 If Statement Ends
 Print Statement Recognized
-sample_output_scan_5.txt is a valid SimpCalc program
+input_files/sample_input_5.txt is a valid SimpCalc program

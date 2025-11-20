@@ -6,4 +6,4 @@ Print Statement Recognized
 Print Statement Recognized
 If Statement Ends
 Print Statement Recognized
-sample_output_scan_1.txt is a valid SimpCalc program
+input_files/sample_input_1.txt is a valid SimpCalc program
